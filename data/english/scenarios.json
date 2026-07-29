@@ -1,0 +1,406 @@
+{
+  "meta": {
+    "name": "英语口语场景库",
+    "count": 8,
+    "generator": "qwen3:1.7b"
+  },
+  "scenarios": [
+    {
+      "title": "餐厅点餐",
+      "level": "基础",
+      "goal": "本场景学习目标",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Welcome to the restaurant! Let’s practice ordering food. How would you like to start?"
+        },
+        {
+          "role": "user",
+          "text": "I’d like a salad and a steak."
+        },
+        {
+          "role": "coach",
+          "text": "Great choice! Let me confirm your order. Do you want any drinks with it?"
+        },
+        {
+          "role": "user",
+          "text": "Yes, please add a glass of wine."
+        },
+        {
+          "role": "coach",
+          "text": "Your order is ready. Enjoy your meal!"
+        },
+        {
+          "role": "user",
+          "text": "Thank you for the meal!"
+        },
+        {
+          "role": "coach",
+          "text": "You’re welcome! Have a nice day!"
+        }
+      ],
+      "key_sentences": [
+        "Can I have a...?",
+        "I’d like... please",
+        "I’m sorry, I can’t have...",
+        "Could you please...?",
+        "Your order is ready."
+      ],
+      "cultural_notes": [
+        "在餐厅点餐时使用‘Please’和‘Thank you’的礼貌用语",
+        "注意订单确认时的语序",
+        "使用‘I’d like’代替‘I want’更自然"
+      ],
+      "common_errors": [
+        "将‘order’拼写为‘ordar’",
+        "混淆‘please’和‘your’",
+        "错误使用‘what’s’代替‘what’s’"
+      ],
+      "scenario": "餐厅点餐"
+    },
+    {
+      "title": "机场问路",
+      "level": "基础",
+      "goal": "学习在机场问路时使用基本英语表达，理解方向、路线和设施相关词汇",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Hello, can you tell me the way to the terminal?"
+        },
+        {
+          "role": "user",
+          "text": "Sure! I need to go to the terminal 1."
+        },
+        {
+          "role": "coach",
+          "text": "Is there a bus to the terminal?"
+        },
+        {
+          "role": "user",
+          "text": "Yes, there is a bus."
+        },
+        {
+          "role": "coach",
+          "text": "Which terminal are you going to?"
+        },
+        {
+          "role": "user",
+          "text": "Terminal 2."
+        },
+        {
+          "role": "coach",
+          "text": "Do you need to take the 3号线?"
+        },
+        {
+          "role": "user",
+          "text": "Yes, I need to take the 3号线."
+        }
+      ],
+      "key_sentences": [
+        "Where do you need to go?",
+        "Is there a bus to the terminal?",
+        "Which terminal are you going to?",
+        "Do you need to take the 3号线?"
+      ],
+      "cultural_notes": "机场常见设施包括行李托运口、安检口、登机口，建议使用礼貌用语如'Please'和'Thank you'。注意区分'terminal'（航站楼）和'bus stop'（公交站）。",
+      "common_errors": [
+        "拼写错误：将'terminal'拼成'termi-nal'",
+        "动词时态错误：用过去式'went'代替现在时'go'",
+        "介词错误：将'to'误用为'at'",
+        "不完整句子：缺少'yes'或'no'结尾"
+      ],
+      "scenario": "机场问路"
+    },
+    {
+      "title": "职场沟通",
+      "level": "基础",
+      "goal": "学习职场沟通中的基本问候、请求帮助、信息确认和表达感谢的实用对话",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Hello, how are you? I need to ask for your help with this project."
+        },
+        {
+          "role": "user",
+          "text": "Hello, I'm fine. Can you help me with this project?"
+        },
+        {
+          "role": "coach",
+          "text": "Sure, I can help. Let me know what you need."
+        },
+        {
+          "role": "user",
+          "text": "I need to inform you about the deadline for the report."
+        },
+        {
+          "role": "coach",
+          "text": "Understood. Let me check the details for you."
+        },
+        {
+          "role": "user",
+          "text": "Thank you for your help. I really appreciate it."
+        }
+      ],
+      "key_sentences": [
+        "Hello, how are you?",
+        "Can you help me with this?",
+        "I need to inform you about...",
+        "Let me know what you need.",
+        "Thank you for your help."
+      ],
+      "cultural_notes": "职场沟通需注意正式用语，避免口语化表达。使用礼貌用语如'please'和'thank you'。注意倾听对方需求，保持专业态度。",
+      "common_errors": [
+        "用口语代替正式语（如'I'm fine'代替'How are you?'）",
+        "忽略对方感受（如不问对方需求直接说'Can you help me?'）",
+        "结构混乱（如对话中缺乏逻辑衔接）",
+        "未使用礼貌用语（如'you'代替'your'）",
+        "未明确请求内容（如'Can you help me'未说明具体需求）"
+      ],
+      "scenario": "职场沟通"
+    },
+    {
+      "title": "面试模拟",
+      "level": "基础",
+      "goal": "本场景学习目标",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Hello, how are you today? How did you hear about this position?"
+        },
+        {
+          "role": "user",
+          "text": "I heard about it through a friend. How should I prepare?"
+        },
+        {
+          "role": "coach",
+          "text": "You can start with a brief introduction. What is your name and current job?"
+        },
+        {
+          "role": "user",
+          "text": "My name is Alice, and I'm a student. What should I mention first?"
+        },
+        {
+          "role": "coach",
+          "text": "Good point. Next, you can talk about your interests and why you're interested in this role. What's your biggest strength?"
+        },
+        {
+          "role": "user",
+          "text": "I think teamwork is my strength. Can I share more?"
+        },
+        {
+          "role": "coach",
+          "text": "Great! Now, what are your weaknesses? How would you improve them?"
+        },
+        {
+          "role": "user",
+          "text": "I'm not good at public speaking. I'm working on it."
+        }
+      ],
+      "key_sentences": [
+        "I am interested in this position because of the growth opportunities.",
+        "What are your strengths and weaknesses?",
+        "Can you tell me about your experience?",
+        "Why do you want this job?",
+        "What are your goals for the future?",
+        "How do you handle challenges?"
+      ],
+      "cultural_notes": "面试中需保持礼貌用语，如'Thank you'和'Please'。注意用词准确性，避免模糊表达。保持自信但不过分自夸。",
+      "common_errors": [
+        "将'Can you tell me about yourself?'误用于'Can you tell me about your job?'",
+        "混淆'Why do you want this position?'和'Why do you want to work here?'",
+        "忽略面试流程中的'What are your strengths?'和'What are your weaknesses?'问题",
+        "使用不完整的回答，如'Yes, I think...'而非'Yes, I think I can...'"
+      ],
+      "scenario": "面试模拟"
+    },
+    {
+      "title": "医院就医",
+      "level": "基础",
+      "goal": "学习在医院就医时的日常对话，包括挂号、问诊、医生建议和费用说明",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Hello, I'm Coach Li. Let's practice how to visit the clinic. First, where do you go to get a挂号?"
+        },
+        {
+          "role": "user",
+          "text": "I think I should go to the挂号处."
+        },
+        {
+          "role": "coach",
+          "text": "Great! Then you need to ask the staff for the appointment time. What should you ask them?"
+        },
+        {
+          "role": "user",
+          "text": "Can you tell me about the examination?"
+        },
+        {
+          "role": "coach",
+          "text": "Of course! The doctor will explain the procedure and the required tests. What's the next step?"
+        },
+        {
+          "role": "user",
+          "text": "What is the cost for this test?"
+        },
+        {
+          "role": "coach",
+          "text": "The cost is 200 yuan. You need to pay at the cashier after the examination."
+        }
+      ],
+      "key_sentences": [
+        "How do I get to the clinic?",
+        "Can you tell me about the examination?",
+        "What is the cost for this test?",
+        "What should I bring with me?",
+        "What should I do next?"
+      ],
+      "cultural_notes": "医院流程包括挂号、候诊、检查、缴费等环节，注意礼貌用语如'Please'和'Thank you'。常见错误包括混淆'doctor'和'nurse'，忘记带证件，使用错误介词如'in'而非'at'，以及不礼貌表达如'I don’t know'。",
+      "scenario": "医院就医"
+    },
+    {
+      "title": "商场购物",
+      "level": "基础",
+      "goal": "学习在商场购物时的口语交流，掌握基本购物句型和礼貌用语",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Hello! Let's practice shopping in the mall. How are you today?"
+        },
+        {
+          "role": "user",
+          "text": "Hi! I'm feeling great. I want to buy a new shirt."
+        },
+        {
+          "role": "coach",
+          "text": "Great! Let's look for a shirt. What size do you prefer?"
+        },
+        {
+          "role": "user",
+          "text": "I think size M is best. It fits well."
+        },
+        {
+          "role": "coach",
+          "text": "Perfect! Now let's check the price. Is it 50 yuan?"
+        },
+        {
+          "role": "user",
+          "text": "Yes, it's 50 yuan. I'll buy it."
+        }
+      ],
+      "key_sentences": [
+        "Look for a shirt that fits well",
+        "Ask about the price and size",
+        "Buy something you like",
+        "Check the price before buying",
+        "Thank you for the good service"
+      ],
+      "cultural_notes": "在商场购物时，要礼貌地询问商品信息，如'Can you help me?'，并注意价格单位（like yuan or dollars）。保持耐心，不要着急。",
+      "common_errors": [
+        "混淆 'look for' 和 'look at'（如 'I look for a shirt' vs 'I look at a shirt'）",
+        "误用 'buy' 和 'buying'（如 'I buy it' vs 'I am buying it'）",
+        "混淆 'size' 和 'sizeable'（如 'I need a size 10' vs 'It's sizeable'）",
+        "忘记使用 'please' 和 'thank you'（如 'I want to buy' vs 'Please help me'）"
+      ],
+      "scenario": "商场购物"
+    },
+    {
+      "title": "校园交流",
+      "level": "基础",
+      "goal": "学生能进行简单校园日常交流，如问路、借物、表达感谢",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Good question! Let me show you how to ask for directions."
+        },
+        {
+          "role": "user",
+          "text": "Excuse me, may I ask for directions?"
+        },
+        {
+          "role": "coach",
+          "text": "Perfect! You can say 'Excuse me, may I ask for directions?'"
+        },
+        {
+          "role": "user",
+          "text": "Could you lend me the book?"
+        },
+        {
+          "role": "coach",
+          "text": "Sure, I can lend it to you."
+        },
+        {
+          "role": "user",
+          "text": "Thank you!"
+        },
+        {
+          "role": "coach",
+          "text": "You're welcome! No problem."
+        }
+      ],
+      "key_sentences": [
+        "Excuse me, may I ask for directions?",
+        "Could you lend me...?",
+        "Thank you!",
+        "You're welcome!",
+        "No problem."
+      ],
+      "cultural_notes": "校园场景常见于图书馆、教室、食堂等，注意使用礼貌用语如'Excuse me'和'You're welcome'。",
+      "common_errors": [
+        "忘记使用'Excuse me'或'May I'开头",
+        "错误使用'lend'或'give'时遗漏介词",
+        "混淆'You're welcome'与'Thank you'",
+        "不使用'Please'或'Can you'等礼貌表达"
+      ],
+      "scenario": "校园交流"
+    },
+    {
+      "title": "酒店入住",
+      "level": "基础",
+      "goal": "掌握酒店入住基本流程及常见表达",
+      "dialogue": [
+        {
+          "role": "coach",
+          "text": "Hello! Welcome to the hotel. Can you tell me the room rate?"
+        },
+        {
+          "role": "user",
+          "text": "The room rate is $100 per night."
+        },
+        {
+          "role": "coach",
+          "text": "That's the standard rate. Do you need a reservation?"
+        },
+        {
+          "role": "user",
+          "text": "Yes, I can check in at 10 AM."
+        },
+        {
+          "role": "coach",
+          "text": "Great! Your room will be ready at 10 AM. Do you need help with anything else?"
+        },
+        {
+          "role": "user",
+          "text": "I'll take a shower first. Can I check out at 10 AM?"
+        },
+        {
+          "role": "coach",
+          "text": "Of course. Your check-out time is 10 AM."
+        }
+      ],
+      "key_sentences": [
+        "How much is the room fee?",
+        "Can I check in at 10 AM?",
+        "Do you have a room for tonight?",
+        "I'll take a shower first.",
+        "Your check-out time is 10 AM."
+      ],
+      "cultural_notes": "酒店通常要求客人提前预订，退房时间一般在下午2点左右。注意使用礼貌用语如'Please'和'Thank you'。",
+      "common_errors": [
+        "混淆'check in'和'check out'的时态（如'checked in'应为'checked in'）",
+        "误用'room fee'和'room rate'（如'room fee is $100'应为'room rate is $100'）",
+        "忘记使用正确的介词（如'to check in'而非'to check in'）"
+      ],
+      "scenario": "酒店入住"
+    }
+  ]
+}

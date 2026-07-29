@@ -1,0 +1,36 @@
+# WorkBuddy / runtime / local state
+.workbuddy/
+.chrome_profile/
+.screenshots/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.env
+.venv/
+venv/
+
+# Vector DB / runtime generated data (can be regenerated)
+data/chroma_db/
+data/evaluation_logs/
+data/memory/
+
+# Temporary / QA artifacts
+docs/qa_preview/
+docs/qa_render.pptx
+docs/qa_tmp.pptx
+docs/火山杯答辩PPT_final.pptx
+*.png
+*.tmp
+
+# Output duplicates (canonical versions live under docs/)
+output/
+
+# Node
+node_modules/
+package-lock.json

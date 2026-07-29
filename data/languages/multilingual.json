@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "name": "多语种基础教材",
+    "count": 4,
+    "generator": "qwen3:1.7b"
+  },
+  "languages": [
+    {
+      "language": "日语",
+      "code": "ja",
+      "greetings": [
+        {
+          "native": "こんにちは",
+          "romanization": "konnichiwa",
+          "zh": "你好"
+        }
+      ],
+      "numbers_1_10": [
+        {
+          "native": "一",
+          "romanization": "ichi",
+          "zh": "一"
+        },
+        {
+          "native": "二",
+          "romanization": "ni",
+          "zh": "二"
+        },
+        {
+          "native": "三",
+          "romanization": "san",
+          "zh": "三"
+        },
+        {
+          "native": "四",
+          "romanization": "shi",
+          "zh": "四"
+        },
+        {
+          "native": "五",
+          "romanization": "go",
+          "zh": "五"
+        },
+        {
+          "native": "六",
+          "romanization": "roku",
+          "zh": "六"
+        },
+        {
+          "native": "七",
+          "romanization": "shichi",
+          "zh": "七"
+        },
+        {
+          "native": "八",
+          "romanization": "hachi",
+          "zh": "八"
+        },
+        {
+          "native": "九",
+          "romanization": "kuji",
+          "zh": "九"
+        },
+        {
+          "native": "十",
+          "romanization": "juu",
+          "zh": "十"
+        }
+      ],
+      "common_phrases": [
+        {
+          "native": "ありがとう",
+          "romanization": "arigatō",
+          "zh": "谢谢"
+        },
+        {
+          "native": "こんにちは",
+          "romanization": "konnichiwa",
+          "zh": "你好"
+        },
+        {
+          "native": "お元気ですか",
+          "romanization": "ōkamikā desu ka",
+          "zh": "你怎么样？"
+        },
+        {
+          "native": "お疲れ様です",
+          "romanization": "ōtsukaresu desu desu",
+          "zh": "你辛苦了"
+        },
+        {
+          "native": "です",
+          "romanization": "desu",
+          "zh": "是"
+        },
+        {
+          "native": "おはよう",
+          "romanization": "ohayō",
+          "zh": "早上好"
+        }
+      ],
+      "basic_grammar": "日语的基本语法包括助词的使用和动词的形态变化",
+      "tips": "注意发音的准确性，理解语法结构，积累常用词汇，多练习对话"
+    },
+    {
+      "language": "韩语",
+      "code": "ko",
+      "greetings": [
+        {
+          "native": "안녕하세요",
+          "romanization": "namu",
+          "zh": "早上好"
+        },
+        {
+          "native": "안녕히 가세요",
+          "romanization": "namu hi gaseyo",
+          "zh": "再见"
+        },
+        {
+          "native": "新年快乐",
+          "romanization": "japyeon gatang",
+          "zh": "新年快乐"
+        },
+        {
+          "native": "生日快乐",
+          "romanization": "jikjok gatang",
+          "zh": "生日快乐"
+        }
+      ],
+      "numbers_1_10": [
+        {
+          "native": "1",
+          "romanization": "일",
+          "zh": "一"
+        },
+        {
+          "native": "2",
+          "romanization": "이",
+          "zh": "二"
+        },
+        {
+          "native": "3",
+          "romanization": "삼",
+          "zh": "三"
+        },
+        {
+          "native": "4",
+          "romanization": "사",
+          "zh": "四"
+        },
+        {
+          "native": "5",
+          "romanization": "오",
+          "zh": "五"
+        },
+        {
+          "native": "6",
+          "romanization": "육",
+          "zh": "六"
+        },
+        {
+          "native": "7",
+          "romanization": "칠",
+          "zh": "七"
+        },
+        {
+          "native": "8",
+          "romanization": "팔",
+          "zh": "八"
+        },
+        {
+          "native": "9",
+          "romanization": "구",
+          "zh": "九"
+        },
+        {
+          "native": "10",
+          "romanization": "십",
+          "zh": "十"
+        }
+      ],
+      "common_phrases": [
+        {
+          "native": "안녕하세요",
+          "romanization": "namu",
+          "zh": "你好"
+        },
+        {
+          "native": "안녕히 가세요",
+          "romanization": "namu hi gaseyo",
+          "zh": "再见"
+        },
+        {
+          "native": "오늘은 기분이 좋아요",
+          "romanization": "onurane gikbun i joojaye",
+          "zh": "今天心情不错"
+        },
+        {
+          "native": "이렇게 되었어요",
+          "romanization": "iheotge reejeosyeo",
+          "zh": "就这样了"
+        },
+        {
+          "native": "이렇게 되었어요",
+          "romanization": "iheotge reejeosyeo",
+          "zh": "就这样了"
+        },
+        {
+          "native": "이렇게 되었어요",
+          "romanization": "iheotge reejeosyeo",
+          "zh": "就这样了"
+        }
+      ],
+      "basic_grammar": "명사의 라틴어 표기법 및 동사의 변형",
+      "tips": "发音要准确，多听多说，注意词尾变化，积累常用词汇，练习听力和口语"
+    },
+    {
+      "language": "法语",
+      "code": "fr",
+      "greetings": [
+        {
+          "native": "Bonjour",
+          "romanization": "Bonjour",
+          "zh": "你好"
+        }
+      ],
+      "numbers_1_10": [
+        {
+          "native": "1",
+          "romanization": "I",
+          "zh": "1"
+        }
+      ],
+      "common_phrases": [
+        {
+          "native": "Je suis",
+          "romanization": "Je suis",
+          "zh": "我是一"
+        }
+      ],
+      "basic_grammar": "法语名词有性数变化，动词需根据主语人称和数变位",
+      "tips": "注意发音规律，多练习听力，使用词典查单词拼写"
+    },
+    {
+      "language": "西班牙语",
+      "code": "es",
+      "greetings": [
+        {
+          "native": "Hola",
+          "romanization": "Hola",
+          "zh": "你好"
+        }
+      ],
+      "numbers_1_10": [
+        {
+          "native": "1",
+          "romanization": "Uno",
+          "zh": "一"
+        },
+        {
+          "native": "2",
+          "romanization": "Dos",
+          "zh": "二"
+        },
+        {
+          "native": "3",
+          "romanization": "Tres",
+          "zh": "三"
+        },
+        {
+          "native": "4",
+          "romanization": "Cuatro",
+          "zh": "四"
+        },
+        {
+          "native": "5",
+          "romanization": "Cinco",
+          "zh": "五"
+        },
+        {
+          "native": "6",
+          "romanization": "Seis",
+          "zh": "六"
+        },
+        {
+          "native": "7",
+          "romanization": "Siete",
+          "zh": "七"
+        },
+        {
+          "native": "8",
+          "romanization": "Ocho",
+          "zh": "八"
+        },
+        {
+          "native": "9",
+          "romanization": "Nueve",
+          "zh": "九"
+        },
+        {
+          "native": "10",
+          "romanization": "Diez",
+          "zh": "十"
+        }
+      ],
+      "common_phrases": [
+        {
+          "native": "¿Qué tal?",
+          "romanization": "¿Qué tal?",
+          "zh": "你好吗？"
+        },
+        {
+          "native": "¿Buenos días?",
+          "romanization": "¿Buenos días?",
+          "zh": "早上好"
+        },
+        {
+          "native": "¿Buenas noches?",
+          "romanization": "¿Buenas noches?",
+          "zh": "晚上好"
+        },
+        {
+          "native": "¿Cómo estás?",
+          "romanization": "¿Cómo estás?",
+          "zh": "你好吗？"
+        },
+        {
+          "native": "¿Cuánto es?",
+          "romanization": "¿Cuánto es?",
+          "zh": "多少钱？"
+        },
+        {
+          "native": "¿Dónde está?",
+          "romanization": "¿Dónde está?",
+          "zh": "在哪里？"
+        }
+      ],
+      "basic_grammar": "西班牙语的基本语法包括名词的性数变化和动词的变位，例如：ser, estar, ir等",
+      "tips": "多听多说，使用西班牙语的发音，注意辅音字母的发音，避免常见错误，使用西班牙语的语序"
+    }
+  ]
+}

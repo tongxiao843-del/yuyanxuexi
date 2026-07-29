@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "name": "发音错误弱标注种子",
+    "mode": "rule-based weak label (非真实音频)",
+    "usage": "作为 SVM 发音检测的训练格式示例，生产需用标注音频替换"
+  },
+  "seeds": [
+    {
+      "type": "平翘舌",
+      "correct": "老师 lǎo shī",
+      "deviation": "lǎo sī",
+      "error": "lǎo xī",
+      "note": "翘舌sh→平舌s为偏差，→x为严重错误"
+    },
+    {
+      "type": "前后鼻音",
+      "correct": "平安 píng ān",
+      "deviation": "pín án",
+      "error": "pīng ān",
+      "note": "ing→in为偏差"
+    },
+    {
+      "type": "n/l",
+      "correct": "牛奶 niú nǎi",
+      "deviation": "liú nǎi",
+      "error": "liú lǎi",
+      "note": "n→l混淆"
+    },
+    {
+      "type": "f/h",
+      "correct": "飞机 fēi jī",
+      "deviation": "huī jī",
+      "error": "huī jī",
+      "note": "f→h混淆"
+    },
+    {
+      "type": "r/l",
+      "correct": "热闹 rè nao",
+      "deviation": "lè nao",
+      "error": "lè lao",
+      "note": "r→l混淆"
+    },
+    {
+      "type": "th咬舌",
+      "correct": "three θri:",
+      "deviation": "tree tri:",
+      "error": "sree sri:",
+      "note": "英语θ→t为偏差，→s为错误"
+    }
+  ]
+}
