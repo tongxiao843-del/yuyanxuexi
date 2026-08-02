@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>全龄段智能体 · 发音评测（小程序 web-view 版）</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 20px; }
+  .row { margin: 12px 0; }
+  label { display: inline-block; width: 80px; }
+  select, input[type=text], input[type=file] { padding: 6px 8px; font-size: 15px; max-width: 100%; }
+  button { padding: 8px 16px; font-size: 15px; border: 0; border-radius: 8px; background: #1aa3a3; color: #fff; cursor: pointer; margin: 6px 8px 6px 0; }
+  button:disabled { background: #9ad; cursor: not-allowed; }
+  #recBtn.recording { background: #e0533d; }
+  pre { background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 8px; padding: 12px; overflow: auto; }
+  .coach { background: #eafaf7; border: 1px solid #b8e6dd; border-radius: 8px; padding: 12px; white-space: pre-wrap; }
+  .tip { color: #666; font-size: 13px; }
+  .warn { color: #b5651d; font-size: 13px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <h1>全龄段多语言学习智能体 · 发音评测</h1>
+  <p class="tip">本页适配微信小程序 <code>web-view</code>：优先用「上传跟读录音」，评测与指导由腾讯云函数（讯飞 + Coze）服务端完成。</p>
+  <p id="envTip" class="warn"></p>
+
+  <div class="row">
+    <label>板块</label>
+    <select id="board">
+      <option value="english">英语</option>
+      <option value="pinyin">拼音</option>
+      <option value="multilingual">多语种</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label>参考句</label>
+    <input id="refText" type="text" value="hello" size="30" />
+  </div>
+
+  <!-- 桌面浏览器可实时录音；微信 web-view 内麦克风不可用，自动隐藏 -->
+  <div class="row" id="recRow">
+    <button id="recBtn">🎤 开始跟读录音</button>
+    <button id="submitBtn" disabled>提交评测</button>
+  </div>
+
+  <!-- 上传音频：web-view / 移动端主路径 -->
+  <div class="row">
+    <label>上传音频</label>
+    <input id="fileInput" type="file" accept="audio/*" />
+    <button id="uploadBtn">上传并提交评测</button>
+  </div>
+
+  <div class="row">
+    <strong>评测原始结果：</strong>
+    <pre id="raw">（录音后提交，或选音频文件上传）</pre>
+  </div>
+
+  <div class="row">
+    <strong>Coze 生成的发音指导：</strong>
+    <div id="coach" class="coach">（待生成）</div>
+  </div>
+
+  <div class="row">
+    <button id="speakBtn" disabled>🔊 朗读指导</button>
+  </div>
+
+<script>
+// ===== 配置 =====
+// 云函数地址（已开启 CORS + 服务端代调 Coze，无需在前端填 Coze 令牌）
+const SCF_URL = "https://1417297297-kj0qvxz13p.ap-guangzhou.tencentscf.com";
+// 仅当云函数未配置 COZE_TOKEN/COZE_BOT_ID 时，才需要在前端直连 Coze（默认留空，走服务端）
+const COZE_TOKEN = "";
+const COZE_BOT_ID = "";
+
+// ===== 环境检测 =====
+const ua = navigator.userAgent || "";
+const inWeChat = /MicroMessenger/i.test(ua);
+const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && !inWeChat;
+const envTip = document.getElementById("envTip");
+if (inWeChat) {
+  envTip.textContent = "检测到微信环境：请使用「上传音频」方式提交跟读录音（小程序内麦克风不可用）。";
+  document.getElementById("recRow").classList.add("hidden");
+} else if (!canRecord) {
+  envTip.textContent = "当前环境不支持实时麦克风录音，请使用「上传音频」方式。";
+  document.getElementById("recRow").classList.add("hidden");
+} else {
+  envTip.textContent = "桌面环境：可直接录音，也可用「上传音频」。";
+}
+
+// ===== 录音状态（桌面）=====
+let audioCtx = null, sourceNode = null, processor = null, stream = null;
+let recordedBuffers = [];
+let sampleRate = 44100;
+
+const recBtn = document.getElementById("recBtn");
+const submitBtn = document.getElementById("submitBtn");
+const speakBtn = document.getElementById("speakBtn");
+
+recBtn.onclick = async () => {
+  if (recBtn.classList.contains("recording")) stopRec();
+  else await startRec();
+};
+
+async function startRec() {
+  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  sampleRate = audioCtx.sampleRate;
+  sourceNode = audioCtx.createMediaStreamSource(stream);
+  processor = audioCtx.createScriptProcessor(4096, 1, 1);
+  recordedBuffers = [];
+  processor.onaudioprocess = (e) => {
+    recordedBuffers.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  };
+  sourceNode.connect(processor);
+  processor.connect(audioCtx.destination);
+  recBtn.textContent = "⏹ 停止并保存";
+  recBtn.classList.add("recording");
+  submitBtn.disabled = true;
+}
+
+function stopRec() {
+  processor.disconnect();
+  sourceNode.disconnect();
+  stream.getTracks().forEach((t) => t.stop());
+  recBtn.textContent = "🎤 重新录音";
+  recBtn.classList.remove("recording");
+  submitBtn.disabled = false;
+}
+
+// ===== 音频处理：重采样 16k + WAV 封装 =====
+function resampleTo16k(buffers, fromRate) {
+  let total = 0;
+  for (const b of buffers) total += b.length;
+  const merged = new Float32Array(total);
+  let off = 0;
+  for (const b of buffers) { merged.set(b, off); off += b.length; }
+  const toRate = 16000;
+  const ratio = fromRate / toRate;
+  const newLen = Math.round(total / ratio);
+  const out = new Float32Array(newLen);
+  for (let i = 0; i < newLen; i++) {
+    const idx = i * ratio;
+    const i0 = Math.floor(idx);
+    const i1 = Math.min(i0 + 1, total - 1);
+    const f = idx - i0;
+    out[i] = merged[i0] * (1 - f) + merged[i1] * f;
+  }
+  return out;
+}
+
+function floatTo16BitPCM(input) {
+  const out = new Int16Array(input.length);
+  for (let i = 0; i < input.length; i++) {
+    const s = Math.max(-1, Math.min(1, input[i]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return out;
+}
+
+function encodeWAV(samples16) {
+  const buffer = new ArrayBuffer(44 + samples16.length * 2);
+  const view = new DataView(buffer);
+  const ws = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+  ws(0, "RIFF"); view.setUint32(4, buffer.byteLength - 8, true); ws(8, "WAVE");
+  ws(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true); view.setUint32(24, 16000, true); view.setUint32(28, 32000, true);
+  view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  ws(36, "data"); view.setUint32(40, samples16.length * 2, true);
+  let off = 44;
+  for (let i = 0; i < samples16.length; i++) { view.setInt16(off, samples16[i], true); off += 2; }
+  return new Uint8Array(buffer);
+}
+
+function toWavBase64(float32, fromRate) {
+  const pcm16 = floatTo16BitPCM(resampleTo16k([float32], fromRate));
+  return btoa(String.fromCharCode.apply(null, encodeWAV(pcm16)));
+}
+
+// ===== 提交：把音频 base64 发给云函数（评测 + 服务端 Coze 指导）=====
+async function sendToSCF(audio_base64) {
+  const reference_text = document.getElementById("refText").value.trim();
+  const board = document.getElementById("board").value;
+  document.getElementById("raw").textContent = "评测中...";
+  document.getElementById("coach").textContent = "Coze 生成中...";
+  try {
+    const resp = await fetch(SCF_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audio_base64, reference_text, board, want_coach: true }),
+    });
+    const data = await resp.json();
+    document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
+
+    if (data.error) {
+      document.getElementById("coach").textContent = "云函数返回错误：" + data.error;
+      return;
+    }
+    if (data.coach) {
+      document.getElementById("coach").textContent = data.coach;
+      speakBtn.disabled = false;
+    } else if (data.coach_error) {
+      document.getElementById("coach").textContent =
+        "服务端 Coze 调用失败：" + data.coach_error + "\n（请确认云函数已配置 COZE_TOKEN/COZE_BOT_ID）";
+    } else if (COZE_TOKEN && COZE_BOT_ID) {
+      await callCozeClient(data, reference_text, board); // 前端兜底直连
+    } else {
+      document.getElementById("coach").textContent =
+        "（未返回指导：请在云函数配置 COZE_TOKEN/COZE_BOT_ID，或在页面顶部填 COZE_TOKEN/COZE_BOT_ID 走前端直连）";
+    }
+  } catch (e) {
+    document.getElementById("raw").textContent = "请求失败：" + e.message;
+  }
+}
+
+// ===== 桌面录音提交 =====
+submitBtn.onclick = async () => {
+  if (!recordedBuffers.length) { alert("请先录音"); return; }
+  const wav64 = toWavBase64(mergeBuffers(recordedBuffers), sampleRate);
+  await sendToSCF(wav64);
+};
+
+function mergeBuffers(buffers) {
+  let total = 0;
+  for (const b of buffers) total += b.length;
+  const merged = new Float32Array(total);
+  let off = 0;
+  for (const b of buffers) { merged.set(b, off); off += b.length; }
+  return merged;
+}
+
+// ===== 上传音频提交（web-view 主路径）=====
+document.getElementById("uploadBtn").onclick = async () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) { alert("请先选择音频文件"); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const tmp = new AC();
+  const arrayBuf = await file.arrayBuffer();
+  let audioBuf;
+  try {
+    audioBuf = await tmp.decodeAudioData(arrayBuf);
+  } catch (e) {
+    alert("音频解码失败，请上传 WAV/MP3/M4A 等常见格式：" + e.message);
+    return;
+  }
+  const float32 = audioBuf.getChannelData(0);
+  const wav64 = toWavBase64(float32, audioBuf.sampleRate);
+  await sendToSCF(wav64);
+};
+
+// ===== 前端兜底直连 Coze（仅当未走服务端且填了令牌）=====
+async function callCozeClient(evalResult, reference_text, board) {
+  const userMsg =
+    `【发音评测结果】参考句：${reference_text}；板块：${board}；` +
+    `评测JSON：${JSON.stringify(evalResult)}。请根据评测结果给出发音诊断、标准示范和跟读练习。`;
+  try {
+    const resp = await fetch("https://api.coze.cn/v3/chat", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${COZE_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bot_id: COZE_BOT_ID, user_id: "demo_user", stream: false,
+        auto_save_history: true,
+        additional_messages: [{ role: "user", content: userMsg, content_type: "text" }],
+      }),
+    });
+    const data = await resp.json();
+    let reply = "";
+    if (data && data.data && Array.isArray(data.data.messages)) {
+      for (const m of data.data.messages) if (m.role === "assistant") reply += m.content;
+    }
+    document.getElementById("coach").textContent = reply || JSON.stringify(data, null, 2);
+    speakBtn.disabled = false;
+  } catch (e) {
+    document.getElementById("coach").textContent = "Coze 调用失败：" + e.message;
+  }
+}
+
+// ===== TTS（微信 web-view 内可能不可用，已做降级）=====
+speakBtn.onclick = () => {
+  const text = document.getElementById("coach").textContent;
+  if (text && window.speechSynthesis) {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  } else if (text) {
+    alert("当前环境不支持自动朗读，请手动阅读上方指导文本。");
+  }
+};
+</script>
+</body>
+</html>

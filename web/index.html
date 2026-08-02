@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>言塾 · 全龄段 AI 语言教练</title>
+<style>
+  :root{
+    --paper:#f4efe3; --paper2:#ece3d2; --ink:#2b2622; --ink-soft:#5a534a;
+    --seal:#9e2b25; --jade:#3f7d6e; --gold:#b8924a; --line:#d8cdb6;
+    --card:#fbf7ee; --shadow:0 10px 30px rgba(60,45,25,.12);
+    --ui-scale:1;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    color:var(--ink); background:var(--paper);
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(158,43,37,.05), transparent 42%),
+      radial-gradient(circle at 82% 88%, rgba(63,125,110,.06), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(120,95,55,.025) 0 2px, transparent 2px 5px);
+    font-size:calc(15px * var(--ui-scale)); line-height:1.7; overflow:hidden;
+  }
+  body.age-child{--ui-scale:1.12;} body.age-elder{--ui-scale:1.28; --ink:#1f1b18; --ink-soft:#3f3933;}
+  body.age-elder{filter:contrast(1.06);}
+  .serif{font-family:"Noto Serif SC","Source Han Serif SC","Songti SC",STSong,serif;}
+
+  /* 顶栏 */
+  .topbar{position:fixed;top:0;left:0;right:0;height:62px;display:flex;align-items:center;
+    gap:14px;padding:0 20px;background:rgba(244,239,227,.86);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);z-index:30;}
+  .seal{width:38px;height:38px;border-radius:50%;background:var(--seal);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-family:"Noto Serif SC",serif;
+    font-weight:700;font-size:20px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);flex:none;}
+  .brand{font-family:"Noto Serif SC",serif;font-weight:700;font-size:21px;letter-spacing:3px;}
+  .brand small{font-family:inherit;font-weight:400;font-size:11px;letter-spacing:1px;color:var(--ink-soft);margin-left:8px;}
+  .top-actions{margin-left:auto;display:flex;gap:10px;}
+  .tbtn{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
+    padding:7px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:.2s;}
+  .tbtn:hover{border-color:var(--seal);color:var(--seal);}
+
+  /* 拜师礼 */
+  .onboard{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:24px;text-align:center;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(184,146,74,.10), transparent 55%),
+      var(--paper);}
+  .ob-seal{width:96px;height:96px;border-radius:50%;background:var(--seal);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-family:"Noto Serif SC",serif;
+    font-weight:700;font-size:52px;box-shadow:0 12px 30px rgba(158,43,37,.35), inset 0 0 0 3px rgba(255,255,255,.3);
+    margin-bottom:18px;transition:transform .6s cubic-bezier(.2,1.4,.4,1), opacity .6s;}
+  .ob-seal.stamp{transform:scale(1.18) rotate(-8deg);opacity:1;}
+  .ob-title{font-family:"Noto Serif SC",serif;font-size:40px;font-weight:700;letter-spacing:8px;margin:6px 0;}
+  .ob-tag{color:var(--ink-soft);font-size:15px;min-height:24px;letter-spacing:1px;
+    font-family:"Noto Serif SC",serif;}
+  .ob-sub{color:var(--ink-soft);font-size:13px;margin-top:4px;letter-spacing:2px;}
+  .ob-section{margin-top:26px;width:100%;max-width:560px;}
+  .ob-label{font-size:12px;letter-spacing:3px;color:var(--gold);margin-bottom:10px;text-align:left;}
+  .age-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .age-chip{padding:10px 18px;border:1px solid var(--line);border-radius:24px;background:var(--card);
+    cursor:pointer;font-size:15px;transition:.2s;}
+  .age-chip.on{border-color:var(--seal);color:var(--seal);background:#fff;box-shadow:var(--shadow);}
+  .board-cards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+  .board-card{width:160px;padding:18px 14px;border:1px solid var(--line);border-radius:16px;
+    background:var(--card);cursor:pointer;text-align:left;transition:.22s;position:relative;overflow:hidden;}
+  .board-card:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+  .board-card.on{border-color:var(--jade);box-shadow:0 0 0 2px rgba(63,125,110,.25),var(--shadow);}
+  .board-card .bc-ico{font-size:26px;}
+  .board-card .bc-name{font-family:"Noto Serif SC",serif;font-weight:700;font-size:17px;margin-top:8px;}
+  .board-card .bc-desc{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+  .ob-start{margin-top:30px;padding:13px 46px;border:none;border-radius:30px;cursor:pointer;
+    background:var(--seal);color:#fff;font-family:"Noto Serif SC",serif;font-size:18px;letter-spacing:4px;
+    box-shadow:0 10px 24px rgba(158,43,37,.35);transition:.2s;}
+  .ob-start:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+  .ob-start:not(:disabled):hover{transform:translateY(-2px);}
+
+  /* 主舞台 */
+  .stage{position:absolute;top:62px;left:0;right:0;bottom:0;display:flex;flex-direction:column;}
+  .tabs{display:flex;gap:8px;padding:12px 18px 0;max-width:980px;margin:0 auto;width:100%;}
+  .tab{padding:9px 20px;border-radius:14px 14px 0 0;border:1px solid transparent;cursor:pointer;
+    font-family:"Noto Serif SC",serif;font-size:15px;color:var(--ink-soft);background:transparent;transition:.2s;}
+  .tab.on{background:var(--card);color:var(--ink);border-color:var(--line);border-bottom-color:var(--card);
+    box-shadow:0 -4px 14px rgba(60,45,25,.06);}
+  .panel-wrap{flex:1;overflow:hidden;max-width:980px;margin:0 auto;width:100%;}
+  .panel{display:none;height:100%;}
+  .panel.on{display:block;}
+
+  /* 学堂 */
+  .chat-scroll{height:100%;overflow-y:auto;padding:18px 18px 8px;}
+  .msg{display:flex;gap:12px;margin-bottom:18px;align-items:flex-start;}
+  .msg .av{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;
+    justify-content:center;font-family:"Noto Serif SC",serif;font-weight:700;color:#fff;font-size:15px;}
+  .msg.coach .av{background:var(--seal);} .msg.user .av{background:var(--jade);order:2;}
+  .bubble{max-width:78%;padding:14px 18px;border-radius:16px;background:var(--card);
+    border:1px solid var(--line);box-shadow:var(--shadow);white-space:pre-wrap;word-break:break-word;}
+  .msg.user{flex-direction:row-reverse;} .msg.user .bubble{background:var(--jade);color:#fff;border:none;}
+  .bubble .ln{margin:2px 0;} .bubble .ln.hl{color:var(--seal);font-weight:600;}
+  .bubble .ln.bull{padding-left:14px;position:relative;} .bubble .ln.bull:before{content:"·";position:absolute;left:2px;color:var(--gold);}
+  .bubble .coach-head{font-family:"Noto Serif SC",serif;font-size:12px;letter-spacing:2px;color:var(--gold);margin-bottom:8px;border-bottom:1px dashed var(--line);padding-bottom:6px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .chip{padding:7px 14px;border:1px solid var(--jade);color:var(--jade);background:#fff;border-radius:18px;
+    font-size:13px;cursor:pointer;transition:.18s;}
+  .chip:hover{background:var(--jade);color:#fff;}
+  .typing{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--seal);
+    animation:blink 1s infinite;} @keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+
+  .composer{display:flex;gap:10px;padding:12px 18px 16px;align-items:flex-end;border-top:1px solid var(--line);background:rgba(244,239,227,.7);}
+  .composer textarea{flex:1;resize:none;height:46px;max-height:120px;border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;font-family:inherit;font-size:15px;background:var(--card);color:var(--ink);outline:none;}
+  .composer textarea:focus{border-color:var(--jade);}
+  .send{width:46px;height:46px;border-radius:50%;border:none;background:var(--seal);color:#fff;font-size:20px;
+    cursor:pointer;flex:none;box-shadow:0 6px 16px rgba(158,43,37,.3);transition:.2s;}
+  .send:hover{transform:translateY(-2px);} .send:disabled{opacity:.5;}
+  .sug-row{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 10px;}
+  .sug{padding:6px 13px;border:1px solid var(--line);border-radius:16px;background:var(--card);
+    font-size:12.5px;color:var(--ink-soft);cursor:pointer;transition:.18s;}
+  .sug:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* 语音研习室 */
+  .studio{height:100%;display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 18px;overflow-y:auto;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);}
+  .card h3{font-family:"Noto Serif SC",serif;margin:0 0 12px;font-size:17px;display:flex;align-items:center;gap:8px;}
+  .card h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--seal);}
+  .read-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;max-height:230px;overflow-y:auto;}
+  .read-pill{padding:8px 13px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font-size:13.5px;transition:.18s;}
+  .read-pill:hover{border-color:var(--jade);} .read-pill.on{border-color:var(--jade);background:var(--jade);color:#fff;}
+  .ref-input{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-family:inherit;
+    font-size:14px;background:#fff;color:var(--ink);outline:none;margin-top:6px;}
+  .ref-input:focus{border-color:var(--jade);}
+  .rec-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:16px;}
+  .rec-orb{width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 40%, #c0473f, var(--seal));
+    box-shadow:0 10px 26px rgba(158,43,37,.4);display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:14px;cursor:pointer;border:none;transition:.2s;position:relative;}
+  .rec-orb:disabled{opacity:.45;cursor:not-allowed;}
+  .rec-orb.live{animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(158,43,37,.5)}70%{box-shadow:0 0 0 26px rgba(158,43,37,0)}100%{box-shadow:0 0 0 0 rgba(158,43,37,0)}}
+  .wave{width:100%;height:54px;display:block;}
+  .rec-status{font-size:13px;color:var(--ink-soft);min-height:18px;}
+  .eval-btn{margin-top:6px;padding:10px 26px;border:none;border-radius:22px;background:var(--jade);color:#fff;
+    font-family:"Noto Serif SC",serif;font-size:15px;letter-spacing:2px;cursor:pointer;transition:.2s;}
+  .eval-btn:disabled{opacity:.45;} .eval-btn:not(:disabled):hover{transform:translateY(-2px);}
+
+  /* 评测结果 */
+  .score-area{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .ring{position:relative;width:150px;height:150px;}
+  .ring svg{transform:rotate(-90deg);}
+  .ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .num b{font-family:"Noto Serif SC",serif;font-size:42px;line-height:1;}
+  .ring .num span{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .words{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .wchip{padding:7px 13px;border-radius:14px;font-size:14px;color:#fff;font-family:"Noto Serif SC",serif;}
+  .verdict{font-family:"Noto Serif SC",serif;font-size:16px;text-align:center;color:var(--ink);margin:4px 0;}
+  .coach-box{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;white-space:pre-wrap;color:var(--ink-soft);font-size:14px;}
+
+  /* 学习足迹抽屉 */
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:320px;background:var(--card);border-left:1px solid var(--line);
+    box-shadow:-12px 0 30px rgba(60,45,25,.15);transform:translateX(100%);transition:transform .35s;z-index:40;padding:22px;overflow-y:auto;}
+  .drawer.on{transform:translateX(0);}
+  .drawer h3{font-family:"Noto Serif SC",serif;margin:0 0 6px;}
+  .drawer .dhint{font-size:12px;color:var(--ink-soft);margin-bottom:16px;}
+  .fp{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:10px;cursor:pointer;transition:.18s;}
+  .fp:hover{border-color:var(--seal);} .fp .fp-word{font-family:"Noto Serif SC",serif;font-size:15px;}
+  .fp .fp-meta{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+  .fp-empty{color:var(--ink-soft);font-size:13px;text-align:center;margin-top:30px;}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);
+    color:#fff;padding:11px 22px;border-radius:22px;font-size:13.5px;opacity:0;transition:.3s;z-index:60;pointer-events:none;}
+  .toast.on{opacity:.95;transform:translateX(-50%) translateY(0);}
+  .fade-in{animation:fade .5s ease;} @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  ::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;}
+  @media(max-width:760px){.studio{grid-template-columns:1fr;}.board-card{width:140px;}}
+</style>
+</head>
+<body class="age-adult">
+
+  <div class="topbar">
+    <div class="seal">言</div>
+    <div class="brand serif">言塾<small>全龄段 AI 语言教练</small></div>
+    <div class="top-actions">
+      <button class="tbtn" id="footBtn">学习足迹</button>
+      <button class="tbtn" id="restartBtn">重开拜师礼</button>
+    </div>
+  </div>
+
+  <!-- 拜师礼 -->
+  <div class="onboard" id="onboard">
+    <div class="ob-seal serif" id="obSeal">言</div>
+    <div class="ob-title serif">学语言，如同拜师</div>
+    <div class="ob-tag serif" id="obTag">先生执卷，静候君来</div>
+    <div class="ob-sub">— 全龄段 · 多语种 · 音素级发音矫正 —</div>
+
+    <div class="ob-section">
+      <div class="ob-label serif">一、择身份（全龄适配）</div>
+      <div class="age-row" id="ageRow">
+        <div class="age-chip" data-age="儿童">儿童</div>
+        <div class="age-chip" data-age="青少年">青少年</div>
+        <div class="age-chip on" data-age="成人">成人</div>
+        <div class="age-chip" data-age="老人">老人</div>
+      </div>
+    </div>
+
+    <div class="ob-section">
+      <div class="ob-label serif">二、选学堂（三板块）</div>
+      <div class="board-cards" id="boardCards">
+        <div class="board-card on" data-board="拼音">
+          <div class="bc-ico">𠆢</div>
+          <div class="bc-name serif">拼音学堂</div>
+          <div class="bc-desc">声母韵母 · 平翘舌 / 前后鼻音矫正</div>
+        </div>
+        <div class="board-card" data-board="英语">
+          <div class="bc-ico">A</div>
+          <div class="bc-name serif">英语口语</div>
+          <div class="bc-desc">真实场景对话 · 连读弱读拆解</div>
+        </div>
+        <div class="board-card" data-board="多语种">
+          <div class="bc-ico">あ</div>
+          <div class="bc-name serif">多语问候</div>
+          <div class="bc-desc">日 / 韩 / 法 / 西 日常表达</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="ob-start serif" id="startBtn" disabled>行拜师礼 · 开学</button>
+  </div>
+
+  <!-- 主舞台 -->
+  <div class="stage" id="stage" style="display:none">
+    <div class="tabs">
+      <button class="tab on" data-tab="chat">学堂 · 对话</button>
+      <button class="tab" data-tab="studio">语音研习室</button>
+    </div>
+    <div class="panel-wrap">
+      <!-- 学堂 -->
+      <div class="panel on" id="panelChat">
+        <div class="chat-scroll" id="chatScroll"></div>
+        <div class="sug-row" id="sugRow"></div>
+        <div class="composer">
+          <textarea id="chatInput" placeholder="说一句你想练的，例如：我想练英语咖啡店点单…"></textarea>
+          <button class="send" id="sendBtn">➤</button>
+        </div>
+      </div>
+      <!-- 研习室 -->
+      <div class="panel" id="panelStudio">
+        <div class="studio">
+          <div class="card">
+            <h3><span class="dot"></span>选句跟读</h3>
+            <div class="read-list" id="readList"></div>
+            <input class="ref-input" id="refInput" placeholder="或自行输入跟读句 / 单词…" />
+            <div class="rec-wrap">
+              <button class="rec-orb" id="recOrb">按住录音</button>
+              <canvas class="wave" id="waveCanvas" width="540" height="54"></canvas>
+              <div class="rec-status" id="recStatus">点击下方圆钮开始跟读</div>
+              <button class="eval-btn" id="evalBtn" disabled>呈交评测</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3><span class="dot"></span>评测与先生评点</h3>
+            <div id="evalResult">
+              <div class="fp-empty">录完跟读后，这里会呈现音素级评分环与逐字热力，并由先生给出针对性指导。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 学习足迹 -->
+  <div class="drawer" id="drawer">
+    <h3 class="serif">学习足迹</h3>
+    <div class="dhint">系统自动记录薄弱音，点击即可请先生带练复习。</div>
+    <div id="fpList"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ----------------------------- 真实语料（项目数据精选） ----------------------------- */
+const DATA = {
+  "拼音":{
+    readAlouds:["支持","老师","吃饭","平安","更正","心情","牛奶","蓝色","飞机","开发","热闹","入口"],
+    topics:["平翘舌 zh/z 混淆怎么练","前后鼻音 an/ang 不分","n/l 发音混淆","f/h 混淆矫正","r/l 混淆练习"]
+  },
+  "英语":{
+    scenarios:[
+      {t:"餐厅点餐",k:["Can I have a...?","I’d like... please","Could you please...?","Your order is ready."]},
+      {t:"机场问路",k:["Where do you need to go?","Is there a bus to the terminal?","Which terminal are you going to?"]},
+      {t:"职场沟通",k:["Can you help me with this?","Thank you for your help.","Let me know what you need."]},
+      {t:"面试模拟",k:["Why do you want this job?","What are your strengths?","Can you tell me about your experience?"]},
+      {t:"医院就医",k:["How do I get to the clinic?","What is the cost for this test?","What should I do next?"]},
+      {t:"商场购物",k:["Look for a shirt that fits","Ask about the price and size","Thank you for the good service"]},
+      {t:"校园交流",k:["Excuse me, may I ask for directions?","Could you lend me...?","Thank you!"]},
+      {t:"酒店入住",k:["How much is the room fee?","Can I check in at 10 AM?","Your check-out time is 10 AM."]}
+    ]
+  },
+  "多语种":{
+    langs:[
+      {l:"日语",i:[["こんにちは","konnichiwa","你好"],["ありがとう","arigatō","谢谢"],["おはよう","ohayō","早上好"]]},
+      {l:"韩语",i:[["안녕하세요","annyeonghaseyo","你好"],["안녕히 가세요","annyeonghi gaseyo","再见"],["고맙습니다","gomapseumnida","谢谢"]]},
+      {l:"法语",i:[["Bonjour","Bonjour","你好"],["Merci","Merci","谢谢"],["Au revoir","Au revoir","再见"]]},
+      {l:"西班牙语",i:[["Hola","Hola","你好"],["¿Qué tal?","Que tal","你好吗"],["Gracias","Gracias","谢谢"]]}
+    ]
+  }
+};
+const TAGLINES = [
+  "先生执卷，静候君来。",
+  "一字一音，皆是门径。",
+  "口耳之间，自有章法。",
+  "学而不厌，诲人不倦。",
+  "发音之差，千里之遥；先生为君正之。"
+];
+const API_BASE = ""; // 同源由 server.py 提供；若部署到 SCF，改为函数 URL
+
+/* ----------------------------- 状态 ----------------------------- */
+const S = { age:"成人", board:"拼音", recording:false, audioB64:null, recState:null };
+
+/* ----------------------------- 工具 ----------------------------- */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("on"),2200); }
+function esc(s){ return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+/* ----------------------------- 拜师礼 ----------------------------- */
+let tagI=0;
+setInterval(()=>{ if($("#onboard").style.display!=="none"){ tagI=(tagI+1)%TAGLINES.length; $("#obTag").textContent=TAGLINES[tagI]; } },3600);
+$$("#ageRow .age-chip").forEach(c=>c.onclick=()=>{ $$("#ageRow .age-chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); S.age=c.dataset.age; checkStart(); });
+$$("#boardCards .board-card").forEach(c=>c.onclick=()=>{ $$("#boardCards .board-card").forEach(x=>x.classList.remove("on")); c.classList.add("on"); S.board=c.dataset.board; checkStart(); });
+function checkStart(){ $("#startBtn").disabled = !(S.age && S.board); }
+$("#startBtn").onclick=()=>{
+  const seal=$("#obSeal"); seal.classList.add("stamp");
+  setTimeout(()=>{ $("#onboard").style.display="none"; $("#stage").style.display="flex";
+    document.body.className = "age-"+({儿童:"child",青少年:"teen",成人:"adult",老人:"elder"}[S.age]);
+    enterStudio(); toast("拜师礼成 · 先生已就位"); }, 620);
+};
+$("#restartBtn").onclick=()=>{ $("#stage").style.display="none"; $("#onboard").style.display="flex"; };
+
+/* ----------------------------- 标签切换 ----------------------------- */
+$$(".tab").forEach(t=>t.onclick=()=>{ $$(".tab").forEach(x=>x.classList.remove("on")); t.classList.add("on");
+  $$(".panel").forEach(p=>p.classList.remove("on")); $("#panel"+(t.dataset.tab==="chat"?"Chat":"Studio")).classList.add("on"); });
+
+/* ----------------------------- 学堂对话 ----------------------------- */
+function enterStudio(){ renderReadList(); renderSuggestions(); pushCoachIntro(); }
+function pushCoachIntro(){
+  const intro = `已就位。我是你的语言教练，当前学堂：【${S.board}】　身份：【${S.age}】。\n想练什么，直接说，或点下方快捷入口。`;
+  addMsg("coach", renderLetter(intro), false);
+}
+function renderSuggestions(){
+  const row=$("#sugRow"); row.innerHTML="";
+  let sugs=[];
+  if(S.board==="拼音") sugs = DATA["拼音"].topics;
+  else if(S.board==="英语") sugs = DATA["英语"].scenarios.map(s=>"练英语场景："+s.t);
+  else sugs = DATA["多语种"].langs.map(l=>"学"+l.l+"日常问候");
+  sugs.forEach(s=>{ const b=document.createElement("button"); b.className="sug"; b.textContent=s;
+    b.onclick=()=>sendCoach(s); row.appendChild(b); });
+}
+function addMsg(role, html, isUser){
+  const m=document.createElement("div"); m.className="msg "+role+" fade-in";
+  m.innerHTML=`<div class="av serif">${role==="coach"?"言":"徒"}</div><div class="bubble">${html}</div>`;
+  $("#chatScroll").appendChild(m); $("#chatScroll").scrollTop=$("#chatScroll").scrollHeight;
+  return m;
+}
+function renderLetter(text){
+  const lines=(text||"").split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  let html=`<div class="coach-head serif">先 生 批 注</div>`;
+  for(const l of lines){
+    if(/^[\d①-⑩]/.test(l) || /^[（(]?\d/.test(l)) html+=`<div class="ln bull">${esc(l)}</div>`;
+    else if(/[：:]\s*$/.test(l) || /^[【】★✨🎬🗣️😎💡]/.test(l)) html+=`<div class="ln hl">${esc(l)}</div>`;
+    else html+=`<div class="ln">${esc(l)}</div>`;
+  }
+  return html;
+}
+function isMenu(text){
+  const t=text||"";
+  if(/请告诉我你想练|请选择|先选|可以先选|选你的年龄段|选你想练习|请回复对应编号|告诉我你想练|选一下你的年龄段|麻烦你先选|选完年龄段|提前告诉我你想练|直接回复对应|我想先了解|你可以选|先告诉我你的年龄段/.test(t)) return true;
+  const ages=["儿童","青少年","成人","老人","老年"]; if(ages.filter(a=>t.includes(a)).length>=3) return true;
+  return false;
+}
+function renderMenu(text){
+  const lines=(text||"").split(/\n+/);
+  let chips=[];
+  for(const l of lines){
+    const m=l.match(/^\s*(?:[(\d]+[.)]?|[①-⑩])\s*([^（(]+)/);
+    if(m){ let label=m[1].trim().replace(/[）)]$/,''); if(label.length>1&&label.length<30) chips.push(label); }
+  }
+  // 退路：按“1.”等
+  if(!chips.length){ const ms=text.match(/[1-9][．.][^1-9]+/g)||[]; chips=ms.map(s=>s.replace(/^[1-9][．.]/,'').trim()).filter(s=>s.length<30); }
+  let html=renderLetter(text);
+  if(chips.length){
+    html+=`<div class="chips">`+chips.map(c=>`<span class="chip" data-label="${esc(c)}">${esc(c)}</span>`).join("")+`</div>`;
+  }
+  return html;
+}
+function bindMenuChips(el){
+  el.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+    const label=c.dataset.label;
+    const intent = (["儿童","青少年","成人","老人","老年"].includes(label))
+      ? `我想练${S.board}，用户画像：${label}`
+      : `我想练${S.board}的「${label}」，请直接带练`;
+    sendCoach(intent);
+  });
+}
+async function sendCoach(text){
+  text=(text||"").trim(); if(!text) return;
+  addMsg("user", esc(text), true);
+  $("#chatInput").value="";
+  const ph=addMsg("coach",`<span class="typing"></span> 先生正在备课…`, false);
+  try{
+    const r=await fetch(API_BASE+"/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({input:text, board:S.board, age:S.age})});
+    const d=await r.json();
+    const reply=d.reply||d.error||"（先生暂未回应）";
+    let html = isMenu(reply) ? renderMenu(reply) : renderLetter(reply);
+    ph.querySelector(".bubble").innerHTML = html;
+    bindMenuChips(ph);
+    $("#chatScroll").scrollTop=$("#chatScroll").scrollHeight;
+  }catch(e){ ph.querySelector(".bubble").innerHTML=renderLetter("（网络异常，先生未能回应）"); }
+}
+$("#sendBtn").onclick=()=>sendCoach($("#chatInput").value);
+$("#chatInput").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); sendCoach($("#chatInput").value); } });
+
+/* ----------------------------- 语音研习室 ----------------------------- */
+function renderReadList(){
+  const list=$("#readList"); list.innerHTML="";
+  let items=[];
+  if(S.board==="拼音") items=DATA["拼音"].readAlouds;
+  else if(S.board==="英语") items=DATA["英语"].scenarios.flatMap(s=>s.k);
+  else items=DATA["多语种"].langs.flatMap(l=>l.i.map(x=>x[0]));
+  items.forEach(it=>{ const p=document.createElement("div"); p.className="read-pill"; p.textContent=it;
+    p.onclick=()=>{ $$("#readList .read-pill").forEach(x=>x.classList.remove("on")); p.classList.add("on");
+      $("#refInput").value=it; S.audioB64=null; $("#evalBtn").disabled=true; }; list.appendChild(p); });
+}
+// 板块仅在拜师礼阶段可选，进入学堂后不再变更；enterStudio 已刷新研习室与建议
+
+function audioBlobTo16kWavBase64(blob){
+  return new Promise(async(res,rej)=>{
+    try{
+      const ac=new (window.AudioContext||window.webkitAudioContext)();
+      const buf=await ac.decodeAudioData(await blob.arrayBuffer());
+      const rate=16000;
+      const off=new OfflineAudioContext(1, Math.ceil(buf.duration*rate), rate);
+      const src=off.createBufferSource(); src.buffer=buf; src.connect(off.destination); src.start();
+      const ren=await off.startRendering();
+      const ch=ren.getChannelData(0); const len=ch.length;
+      const ab=new ArrayBuffer(44+len*2); const dv=new DataView(ab);
+      const ws=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+      ws(0,'RIFF'); dv.setUint32(4,36+len*2,true); ws(8,'WAVE'); ws(12,'fmt ');
+      dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+      dv.setUint32(24,rate,true); dv.setUint32(28,rate*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+      ws(36,'data'); dv.setUint32(40,len*2,true);
+      let o=44; for(let i=0;i<len;i++){ let s=Math.max(-1,Math.min(1,ch[i])); dv.setInt16(o, s<0?s*0x8000:s*0x7FFF, true); o+=2; }
+      const bytes=new Uint8Array(ab); let bin=""; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+      res(btoa(bin));
+    }catch(e){ rej(e); }
+  });
+}
+let mediaRec, analyser, rafId, recStream;
+const canvas=$("#waveCanvas"); const cctx=canvas.getContext("2d");
+function drawWave(){
+  const w=canvas.width,h=canvas.height; cctx.clearRect(0,0,w,h);
+  if(!analyser){ return; }
+  const n=analyser.frequencyBinCount; const arr=new Uint8Array(n); analyser.getByteTimeDomainData(arr);
+  cctx.lineWidth=2; cctx.strokeStyle="rgba(158,43,37,.7)"; cctx.beginPath();
+  for(let i=0;i<n;i++){ const x=i/n*w; const y=(arr[i]/255)*h; i===0?cctx.moveTo(x,y):cctx.lineTo(x,y); }
+  cctx.stroke(); rafId=requestAnimationFrame(drawWave);
+}
+async function startRec(){
+  if(S.recording) return;
+  try{
+    recStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const src=ac.createMediaStreamSource(recStream); analyser=ac.createAnalyser(); analyser.fftSize=1024;
+    src.connect(analyser); drawWave();
+    mediaRec=new MediaRecorder(recStream); const chunks=[];
+    mediaRec.ondataavailable=e=>chunks.push(e.data);
+    mediaRec.onstop=async()=>{ cancelAnimationFrame(rafId); cctx.clearRect(0,0,canvas.width,canvas.height);
+      const blob=new Blob(chunks,{type:mediaRec.mimeType});
+      try{ S.audioB64=await audioBlobTo16kWavBase64(blob); $("#evalBtn").disabled=false; $("#recStatus").textContent="已录制，可呈交评测"; }
+      catch(e){ $("#recStatus").textContent="音频处理失败："+e.message; }
+      recStream.getTracks().forEach(t=>t.stop());
+    };
+    mediaRec.start(); S.recording=true;
+    $("#recOrb").classList.add("live"); $("#recOrb").textContent="录音中…"; $("#recStatus").textContent="请跟读上方句子";
+  }catch(e){ toast("无法访问麦克风："+e.message); }
+}
+function stopRec(){ if(!S.recording) return; mediaRec.stop(); S.recording=false;
+  $("#recOrb").classList.remove("live"); $("#recOrb").textContent="按住录音"; }
+$("#recOrb").onclick=()=>{ S.recording?stopRec():startRec(); };
+
+async function runEval(){
+  const ref=$("#refInput").value.trim();
+  if(!ref){ toast("请先选或输入跟读句"); return; }
+  if(!S.audioB64){ toast("请先录音"); return; }
+  $("#evalBtn").disabled=true; $("#recStatus").textContent="评测中…";
+  $("#evalResult").innerHTML=`<div class="fp-empty">先生正在聆听你的发音…</div>`;
+  try{
+    const r=await fetch(API_BASE+"/api/eval",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({audio_base64:S.audioB64, reference_text:ref, board:S.board})});
+    const d=await r.json();
+    if(d.error){ $("#evalResult").innerHTML=`<div class="fp-empty">评测失败：${esc(d.error)}</div>`; $("#evalBtn").disabled=false; return; }
+    renderEval(d, ref);
+    // 先生评点：把评测结果作为练习意图喂回工作流
+    const low=d.words.filter(w=>w.score<80).map(w=>w.word).join("、");
+    const intent=`我在练${S.board}，刚跟读了「${ref}」，总分${d.overall_score}，薄弱音：${low||"无明显薄弱"}。请作为语言教练，给我发音拆解、标准示范与跟读练习。`;
+    const box=document.createElement("div"); box.className="coach-box fade-in"; box.innerHTML="先生评点：…";
+    $("#evalResult").appendChild(box);
+    const cr=await fetch(API_BASE+"/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({input:intent, board:S.board, age:S.age})});
+    const cd=await cr.json(); const reply=cd.reply||cd.error||"（先生暂未回应）";
+    box.innerHTML = isMenu(reply) ? renderMenu(reply) : ("先生评点：\n"+esc(reply));
+    bindMenuChips(box);
+    // 记录薄弱音到学习足迹
+    d.words.filter(w=>w.score<70).forEach(w=>addFootprint(w.word, ref, S.board));
+    $("#evalBtn").disabled=false;
+  }catch(e){ $("#evalResult").innerHTML=`<div class="fp-empty">网络异常：${esc(e.message)}</div>`; $("#evalBtn").disabled=false; }
+}
+$("#evalBtn").onclick=runEval;
+
+function scoreColor(s){ return s>=90?"#3f7d6e": s>=60?"#b8924a":"#9e2b25"; }
+function renderEval(d, ref){
+  const score=Math.round(d.overall_score||0); const col=scoreColor(score);
+  const words=(d.words||[]).map(w=>`<span class="wchip" style="background:${scoreColor(w.score)}">${esc(w.word)} ${Math.round(w.score)}</span>`).join("");
+  const verdict = score>=90?"发音清雅，几无瑕疵": score>=60?"略有乡音，可琢可磨":"方音较重，先生陪你慢练";
+  const ring=`<div class="ring"><svg width="150" height="150"><circle cx="75" cy="75" r="66" stroke="#e3d8c2" stroke-width="12" fill="none"/>
+    <circle id="ringFg" cx="75" cy="75" r="66" stroke="${col}" stroke-width="12" fill="none" stroke-linecap="round"
+      stroke-dasharray="414.7" stroke-dashoffset="414.7"/></svg>
+    <div class="num"><b style="color:${col}">0</b><span>综合评分</span></div></div>`;
+  $("#evalResult").innerHTML=`<div class="score-area">${ring}
+    <div class="verdict serif">${verdict}</div>
+    <div style="font-size:12px;color:var(--ink-soft)">参考：${esc(ref)}</div>
+    <div class="words">${words}</div></div>`;
+  // 动画
+  const fg=$("#ringFg"); const target=414.7*(1-score/100); let cur=414.7; const step=()=>{ cur-=(414.7-target)/30; if(cur<=target){cur=target;} fg.style.strokeDashoffset=cur;
+    $("#evalResult .num b").textContent=Math.round(100-(cur/414.7*100)); if(cur>target) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ----------------------------- 学习足迹 ----------------------------- */
+function loadFP(){ try{ return JSON.parse(localStorage.getItem("ys_fp")||"[]"); }catch(e){ return []; } }
+function saveFP(a){ localStorage.setItem("ys_fp", JSON.stringify(a.slice(0,40))); }
+function addFootprint(word, ref, board){
+  const a=loadFP(); a.unshift({word, ref, board, t:Date.now()}); saveFP(a); renderFP();
+}
+function renderFP(){
+  const list=$("#fpList"); const a=loadFP();
+  if(!a.length){ list.innerHTML=`<div class="fp-empty">尚无薄弱音记录。<br>去语音研习室跟读几句吧。</div>`; return; }
+  list.innerHTML=a.map((f,i)=>`<div class="fp" data-i="${i}"><div class="fp-word">${esc(f.word)}</div>
+    <div class="fp-meta">${esc(f.board)} · 出自「${esc(f.ref)}」</div></div>`).join("");
+  list.querySelectorAll(".fp").forEach(el=>el.onclick=()=>{ const f=a[+el.dataset.i];
+    $("#drawer").classList.remove("on"); sendCoach(`请带我复习「${f.word}」（出自${f.board}跟读「${f.ref}」），给我拆解和练习`); });
+}
+$("#footBtn").onclick=()=>{ renderFP(); $("#drawer").classList.toggle("on"); };
+
+/* 初始化研习室列表 */
+renderReadList(); renderFP();
+</script>
+</body>
+</html>

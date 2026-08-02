@@ -31,6 +31,9 @@ docs/火山杯答辩PPT_final.pptx
 # Output duplicates (canonical versions live under docs/)
 output/
 
+# Deprecated / bulky SCF prototype (use scf_xf_proxy_clean/ instead)
+scf_xf_proxy/
+
 # Node
 node_modules/
 package-lock.json

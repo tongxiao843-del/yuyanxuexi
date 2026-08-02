@@ -1,0 +1,20 @@
+{
+  "description": "全龄段多语言学习智能体 - 微信小程序 web-view 版",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "latest",
+  "appid": "touristappid",
+  "projectname": "huoshangbei_webview",
+  "condition": {}
+}

@@ -236,4 +236,318 @@ __WEAK__:<薄弱点描述>
 | 评估 | `agent/evaluation.py` | `EVAL_DIMENSIONS` |
 | 防模板化 | `agent/anti_template.py` | 六层引擎（Coze 用变量近似） |
 | SVM 校验 | `agent/svm_models.py` | 竞赛演示可弱化 |
+
+---
+
+## 13. 语音发音评测落地方案（方案一：工作流旁路接入）
+
+> **目标**：让用户用语音跟读 → 智能体**不把语音转成文字**，而是直接判断"哪个音发错了"并给出舌位指导 + 标准示范（TTS 朗读）。
+> 这正是产品差异化的核心卖点（report_tech.md §工具集成层 / §发音评测）。
+
+### 13.0 关键约束（动手前必读）
+
+- Coze 自带的「语音对话」是 **语音 → ASR 转写 → LLM → TTS** 的端到端链路，**中间拿不到原始音频**，无法旁路给发音评测 API。
+- 因此「不转文字、直接评测发音」**不能只靠 Coze 默认语音通道**，必须走**旁路架构**：由你自己的入口先采集音频，再送工作流评测。
+- 若仅接受"先转文字、再让 LLM 判内容错误"，则直接在 Bot 设置开启语音对话即可（见 §13.6 备注），但那判断不了发音准不准。
+
+### 13.1 旁路架构图
+
 ```
+[用户在小程序/网页跟读录音]
+        │  MediaRecorder 录制
+        ▼
+[你的后端 / 对象存储]  ←── 拿到 audio_url + reference_text(参考句)
+        │  Coze API 调用工作流，传 {audio_url, reference_text, user_id, board}
+        ▼
+[Coze 工作流]
+   ├─ 开始节点(入参)
+   ├─ HTTP 请求节点 ──► 外部发音评测 API（腾讯云/讯飞）
+   │       │  返回：音素级 JSON（每个字的 accuracy / error 标记，非转写文本）
+   │       ▼
+   ├─ 大模型节点 ──► 注入 §3 三层提示词 + 评测 JSON → 生成"错音+舌位+示范+跟读"
+   │       ▼
+   └─ 语音合成节点(TTS) ──► 朗读指导给用户
+```
+
+### 13.2 第 0 步：准备外部发音评测 API
+
+| 厂商 | 产品 | 你需要拿到 | 返回形态 |
+|---|---|---|---|
+| 腾讯云 | 语音评测（SentenceRecognition `eval` 模式） | SecretId / SecretKey | 字级 `words[].pronunciation`(准度)、`match`(0-100) |
+| 讯飞开放平台 | 语音评测（Android/iOS/Web 版，也支持服务端） | APPID / APIKey / APISecret | 音素级 `phone`(音素)、`score`、`content`(错误类型) |
+
+> 这两者返回的都**不是转写文本**，而是"每个音素/字的准确度与错误类型"——正好满足"不转文字、直接评音"的诉求。
+> 具体字段以各厂商最新文档为准；下例用通用结构示意。
+
+### 13.3 第 1 步：搭建录音入口（拿 audio_url）
+
+- **小程序/网页端**：用 `MediaRecorder` 录用户跟读音频（建议单句 3–8 秒），上传到你的对象存储（腾讯云 COS / 阿里 OSS）或后端接口，得到可公网访问的 `audio_url`。
+- 同时把该句**参考文本** `reference_text`（如用户要读的 "thank you" / "zhī shi"）一起带上——评测 API 需要它来比对对错。
+- 调用 Coze 工作流（API 方式，见 Coze「工作流 → API 调用」生成的 endpoint），入参：
+  ```json
+  {
+    "audio_url": "https://your-bucket.cos.ap-xxx/my/file.wav",
+    "reference_text": "thank you",
+    "user_id": "demo_user",
+    "board": "english"
+  }
+  ```
+
+### 13.4 第 2 步：Coze 工作流节点搭建（核心，在 coze.cn 后台）
+
+**节点 1 · 开始（Start）**：声明入参 `audio_url`(string)、`reference_text`(string)、`user_id`(string)、`board`(string)。
+
+**节点 2 · HTTP 请求（调发音评测 API）**：
+- 方法：`POST`
+- URL：厂商评测接口地址（如腾讯云 `https://asr.tencentcloudapi.com` 走签名；讯飞走 WS/HTTP）
+- Headers：鉴权字段（腾讯云 `Authorization` 签名头 / 讯飞 `Authorization: apikey=xxx`）
+- Body（示意）：
+  ```json
+  { "audio_url": "{{audio_url}}", "reference_text": "{{reference_text}}", "mode": "eval" }
+  ```
+- 输出变量：`eval_result`（JSON 字符串，含音素级 accuracy/error）
+
+> 腾讯云签名较复杂，建议放在「代码节点（Python）」里用官方 SDK 调，比纯 HTTP 节点更稳；讯飞 Web 版可直接在前端拿结果再传工作流。
+
+**节点 3 · 大模型（LLM）节点**：
+- 模型：`doubao`（与 Bot 一致）
+- **系统提示词**：粘贴 §3 三层模板，**追加**下方 13.5 的"评测注入段"
+- **用户提示词 / 变量**：
+  ```
+  用户跟读参考句：{{reference_text}}
+  发音评测结果(JSON，非转写)：{{eval_result}}
+  当前板块：{{board}}
+  请基于以上评测结果生成指导（见系统提示词要求）。
+  ```
+- 输出变量：`coach_reply`（指导文本）
+
+**节点 4 · 语音合成（TTS）节点**：
+- 用 Coze 原生「语音合成」/「播报」节点（或 §1 映射的 Edge-TTS 等价插件），把 `coach_reply` 转成语音。
+- 老人适配：调用前可据 §5 的 group 把语速参数调慢（若插件支持）。
+
+### 13.5 第 3 步：提示词注入模板（复制进大模型节点的系统提示词末尾）
+
+```
+【发音评测指导模式】
+你收到的是「发音评测 API 返回的 JSON 结果」，不是用户原话的转写文本。
+它包含每个音素/字的准确度(accuracy)与错误标记(error)。请严格据此判断：
+1) 哪些音素/字 错误(error) 或 偏差(低 accuracy)；
+2) 对应发音部位与舌位指导——例如平舌(z/c/s,舌尖前) vs 翘舌(zh/ch/sh/r,舌尖后)、
+   前鼻(-n) vs 后鼻(-ng)、n-l / f-h 混淆；术语须规范，禁止自创；
+3) 给出该参考句的标准发音示范文本（将送 TTS 朗读，勿加多余解释）；
+4) 设计一句针对性跟读练习。
+未出现在评测结果中的音素，不得臆测；评测无误则给予肯定鼓励。
+```
+
+### 13.6 第 4 步：挂载与发布
+
+- 把工作流挂到 Bot 的「对话入口」（API 触发型），替代默认的纯文本/默认语音链路。
+- 发布到你的小程序/网页渠道（即 13.3 的录音入口所在渠道）。
+- **备注（备选简化版）**：若暂时不接外部 API，可在 Bot 设置直接开启 Coze 默认「语音对话」做演示——它走 ASR 转文字，LLM 只能判**文字内容**对错（语法/用词），**判不了发音准不准**。该简化版仅建议作为临时演示，答辩时务必讲清 13.1 旁路架构才是"不转文字评发音"的真实方案。
+
+### 13.7 与现有设计的衔接（无需另起炉灶）
+
+- **复用 §1 映射第 36 行**：`Edge-TTS 语音 → Coze 语音合成插件 / 播报节点` —— 13.4 节点 4 的 TTS 直接复用。
+- **复用 §1 映射第 33 行**：`SVM 校验 → 代码节点调用外部 API` —— 13.4 节点 2 的"代码节点调外部发音评测 API"正是同一模式。
+- **复用 §3 / §5 / §7**：三层提示词、人群风格、记忆分区全部现成，只需在 13.5 追加"评测注入段"，并把 `eval_result` 作为新变量注入。
+
+### 13.8 给 Trae 的新增任务（接在 §11 之后）
+
+**任务 H — 接入语音发音评测（方案一）**
+> 按 §13.0–13.6 实现旁路架构：① 申请腾讯云/讯飞发音评测 API 密钥；② 在录音入口上传音频得 audio_url+reference_text；③ Coze 工作流建「开始→代码/HTTP节点调评测API→大模型节点(注入 §13.5)→TTS节点」；④ 挂载到 Bot 对话入口并发布到录音渠道。
+> 答辩亮点：强调"返回音素级误差而非转写文本"，对应 report_tech.md 发音评测/口音检测/声浪对比的产品定位。
+
+---
+
+### 13.9 方案 B：在现有工作流内嵌评测路径（不新建工作流）
+
+适用：已在 Coze 搭好主工作流（开始 → 选择器 → 知识库检索 → 大模型×N → 代码 → 结束），希望**直接在原工作流里加节点**而非另起工作流。
+
+**设计图**
+```
+[开始]  (新增入参 audio_url / reference_text / board)
+   │
+   └─► [输入类型判断 选择器]
+          ├─ 分支A: audio_url 非空 ──► [代码节点:调发音评测API] ──► [大模型节点(注入§13.5)] ──► (可选[TTS]) ──► [结束]
+          └─ 分支B: audio_url 为空  ──► [原选择器→知识库→大模型→代码→结束]   (现有文本路径，不变)
+```
+
+**操作步骤（在 coze.cn 工作流画布）**
+1. **改「开始」节点**：新增三个选填入参 `audio_url`(string)、`reference_text`(string)、`board`(string)，保留原文本入参。
+2. **加「输入类型判断」选择器**（放到开始之后、原选择器之前）：
+   - 分支A 条件：`audio_url` 不为空 → 语音评测路径
+   - 分支B 条件：`audio_url` 为空 → 原选择器（把原选择器作为分支B 的下级节点接上）
+   - 操作：点画布底部「+ 添加节点」→ 选「选择器」→ 拖连线：开始→该选择器；该选择器分支B→原选择器。
+3. **分支A 搭节点**（从判断选择器分支A 拉出）：
+   - 「代码」节点（Python，用官方 SDK 调腾讯云/讯飞评测 API），入参 `audio_url`+`reference_text`，输出 `eval_result`。
+   - 「大模型」节点：系统提示词 = 现有三层提示词 + §13.5「发音评测指导模式」；用户提示词变量 `参考句={{reference_text}}`、`评测结果={{eval_result}}`、`板块={{board}}`；输出 `coach_reply`。
+   - （可选）「语音合成」节点把 `coach_reply` 转音频；最后接「结束」。
+4. **分支B（原文本路径）**：一字不动，保留原选择器/知识库/大模型/代码/结束。
+
+**关键现实约束**
+- Coze 内置语音对话会先把语音 **ASR 转成文字** 再进工作流，此时 `audio_url` 为空，自动走分支B——只能判**文字内容**错误（语法/用词），**判不了发音准不准**。
+- 要真正"不转文字、直接评音"，必须让开始节点收到 `audio_url`，即改用 **API 触发 + 外部录音入口**（见 §13.3）：你的小程序/网页录完音把 `audio_url` 传进来，才能走分支A 拿到音素级结果。
+
+**与 §13 关系**：§13.0–13.7 描述"独立工作流"形态；本 13.9 是同一套评测逻辑在**既有工作流内嵌**的等价做法，复用同样的代码节点、提示词(§13.5)、TTS 节点。
+
+---
+
+### 13.10 讯飞语音评测稳定落地（云函数 + Coze 转发）
+
+讯飞 ISE 是 **WebSocket + 签名鉴权**，Coze 代码节点沙箱直接调用容易出网络/依赖问题。最稳定的方案是：**腾讯云 SCF 云函数做代理，Coze 只做 HTTP fetch**。
+
+#### 13.10.1 云函数代码（Node.js 20+，事件函数，无外部依赖）
+
+```javascript
+const { createHmac } = require("crypto");
+
+const APPID = process.env.XF_APPID;
+const APIKEY = process.env.XF_APIKEY;
+const APISECRET = process.env.XF_APISECRET;
+const HOST = "ise-api.xfyun.cn";
+const PATH = "/v2/open-ise";  // 注意：不是 /v2/ise
+
+function boardToLang(b) {
+  b = (b || "").toLowerCase();
+  if (b.includes("pinyin") || b.includes("拼音")) return { language: "zh_cn", category: "read_syllable" };
+  if (b.includes("english") || b.includes("英语")) return { language: "en_us", category: "read_word" };
+  return { language: "zh_cn", category: "read_sentence" };
+}
+
+function stripWavHeader(buf) {
+  if (buf.slice(0, 4).toString() === "RIFF") return buf.slice(44);
+  return buf;
+}
+
+async function evalSpeech(audioBase64, referenceText, language, category) {
+  return new Promise((resolve, reject) => {
+    const date = new Date().toUTCString();
+    const sigOrigin = `host: ${HOST}\ndate: ${date}\nGET ${PATH} HTTP/1.1`;
+    const signature = createHmac("sha256", APISECRET).update(sigOrigin).digest("base64");
+    const authOrigin = `api_key="${APIKEY}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
+    const authorization = Buffer.from(authOrigin).toString("base64");
+    const wsUrl = `wss://${HOST}${PATH}?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${encodeURIComponent(HOST)}`;
+
+    const ws = new WebSocket(wsUrl);
+    let acc = "";
+    ws.on("open", () => {
+      ws.send(JSON.stringify({
+        common: { app_id: APPID },
+        business: { language, category, evalue_mode: "1", rstcd: "utf8", group: "1", subjective_score: "1" },
+        data: { status: 0, text: Buffer.from(referenceText, "utf-8").toString("base64") }
+      }));
+      ws.send(JSON.stringify({ data: { status: 2, audio: audioBase64, encoding: "raw", sample_rate: 16000 } }));
+    });
+    ws.on("message", (d) => {
+      const m = JSON.parse(d.toString());
+      if (m.code !== 0) return reject(new Error(m.message));
+      if (m.data && m.data.sig) acc += m.data.sig;
+      if (m.data && m.data.status === 2) { ws.close(); resolve(acc); }
+    });
+    ws.on("error", (e) => reject(e));
+    setTimeout(() => reject(new Error("timeout")), 15000);
+  });
+}
+
+function parseResult(sig) {
+  const tm = sig.match(/<total_score>([\d.]+)<\/total_score>/);
+  const overall = tm ? parseFloat(tm[1]) : 0;
+  const words = [];
+  const re = /<word[^>]*>\s*<content>([^<]*)<\/content>[\s\S]*?<total_score>([\d.]+)<\/total_score>/g;
+  let wm;
+  while ((wm = re.exec(sig)) !== null) words.push({ word: wm[1], score: parseFloat(wm[2]) });
+  return { overall_score: overall, words };
+}
+
+exports.main_handler = async (event) => {
+  try {
+    const body = JSON.parse(event.body || "{}");
+    const { audio_url, reference_text, board } = body;
+    if (!audio_url || !reference_text)
+      return { statusCode: 200, body: JSON.stringify({ error: "missing params" }) };
+    const resp = await fetch(audio_url);
+    const buf = stripWavHeader(Buffer.from(await resp.arrayBuffer()));
+    const audioBase64 = buf.toString("base64");
+    const { language, category } = boardToLang(board);
+    const sig = await evalSpeech(audioBase64, reference_text, language, category);
+    const parsed = parseResult(sig);
+    return { statusCode: 200, headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...parsed, reference_text, language, audio_url }) };
+  } catch (e) {
+    return { statusCode: 200, body: JSON.stringify({ error: String(e && e.message || e) }) };
+  }
+};
+```
+
+#### 13.10.2 Coze 代码节点（只做 HTTP 转发）
+
+```typescript
+async function main({ params }: Args) {
+  const FUNC_URL = "https://你的API网关地址/";
+  const resp = await fetch(FUNC_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      audio_url: params.audio_url,
+      reference_text: params.reference_text,
+      board: params.board
+    })
+  });
+  const data = await resp.json();
+  return { eval_result: JSON.stringify(data) };
+}
+```
+
+#### 13.10.3 部署步骤
+
+1. SCF 新建 **Node.js 20 事件函数**，粘贴 §13.10.1 代码。
+2. 函数配置 → 环境变量：`XF_APPID`、`XF_APIKEY`、`XF_APISECRET`（从讯飞控制台获取，不要硬编码）。
+3. 触发管理 → 创建 **API 网关触发**（勾选启用集成响应），拿到 HTTPS 地址。
+4. 把该地址填进 Coze 代码节点的 `FUNC_URL`。
+5. 录音端请输出 **16k / 16bit / 单声道 PCM 的 WAV**，云函数会自动去掉 44 字节 WAV 头。
+
+#### 13.10.4 与 §13.9 关系
+
+本 §13.10 是 §13.9 分支A「代码节点」的**稳定实现方式**：Coze 节点不直接 WebSocket 调讯飞，而是通过 HTTP 转发给 SCF 代理，SCF 完成签名、WebSocket、音频下载、结果解析。后面接 §13.9 的「大模型节点（注入 §13.5）」即可生成发音指导。
+
+### 13.11 绕开 Coze 外网限制：前端直调云函数（推荐当前最稳）
+
+#### 13.11.0 背景与问题
+- 实测：Coze 工作流的「HTTP 请求」节点访问 `*.ap-guangzhou.tencentscf.com` 自定义域名时**统一报「设备环境异常，请稍后再试」**，日志仅含入口信息（logId/from:bot-api），无错误堆栈。
+- 关键判断：云端本地 `curl` 测试云函数**正常返回**（`missing params` / `HTTP 404`），说明**云函数本体、依赖、讯飞链路均正常**，问题在 **Coze 平台对工作流外网自定义域名的访问限制/白名单**。
+- 这意味着「让 Coze 工作流直接调外部 HTTP」这条路在当前账号/环境下走不通，需改架构。
+
+#### 13.11.1 新架构（旁路评测，Coze 只做 LLM）
+```
+用户跟读录音
+  → 前端（小程序/网页）直接 POST 腾讯云函数（传 audio_base64，免对象存储上传）
+  → 云函数调讯飞返回 eval_result JSON
+  → 前端把评测结果作为【文本消息】发给 Coze Bot
+  → Coze 只做：根据评测结果生成发音指导 + TTS 朗读
+```
+Coze 完全不碰外部 HTTP，云函数/讯飞逻辑一行不改，且正是 §13 讲的「旁路评测」设计。
+
+#### 13.11.2 云函数改造（已应用）
+- `main_handler` 现同时支持 `audio_base64`（前端直传）与 `audio_url`（下载）两种入参；优先用 `audio_base64`。
+- 改造文件：`scf_xf_proxy_clean/index.py`，需**重新打包并重新上传**到 SCF（覆盖原 `xf_ise_proxy.zip`）。
+- 打包命令：进入 `scf_xf_proxy_clean/` 目录，`zip -r xf_ise_proxy.zip . -x xf_ise_proxy.zip`（含 `websocket/` 依赖）。
+
+#### 13.11.3 前端演示页（已生成）
+- 文件：`frontend/pronunciation_eval_demo.html`（单文件，无依赖）。
+- 功能：麦克风录音 → 重采样到 16k → 封装 WAV → base64 → POST 云函数 → 取 `eval_result` → 调 Coze API 生成指导 → 浏览器 TTS 朗读。
+- 需替换三处：`SCF_URL`（已填当前地址）、`COZE_TOKEN`（Coze 个人设置里的 PAT）、`COZE_BOT_ID`。
+- 运行约束：麦克风需要**安全上下文**——用 `localhost` 或 **HTTPS** 打开页面（`file://` 直接双击通常无法授权麦克风）。本地用 `python -m http.server` 起服务即可。
+
+#### 13.11.4 Coze Bot 侧提示词（识别评测结果）
+在 Bot 系统提示词里追加 §13.5 的「发音评测指导模式」，并加一条路由规则：
+```
+当用户消息以【发音评测结果】开头时，消息内含讯飞返回的 JSON（overall_score / words）。
+请直接基于该 JSON 给出发音诊断、标准示范与跟读练习，不要将其当作普通对话。
+```
+前端 `callCoze()` 会自动构造 `【发音评测结果】参考句：xxx；板块：xxx；评测JSON：{...}` 的用户消息。
+
+#### 13.11.5 部署清单
+1. 重新打包 `scf_xf_proxy_clean/` 并上传覆盖 SCF 函数代码（环境变量 XF_* 不变）。
+2. 本地起服务打开 `pronunciation_eval_demo.html`，填 `COZE_TOKEN` / `COZE_BOT_ID`。
+3. 选板块、填参考句、点录音跟读、提交 → 看评测 JSON 与 Coze 指导。
+4. （比赛发布）将本页集成进你的小程序/网页发布渠道，Coze Bot 发布到同一渠道即可。
